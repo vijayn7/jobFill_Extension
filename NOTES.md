@@ -9,3 +9,4 @@
 - Build: `npm run build`
 - Lint: `npm run lint`
 - Runtime check: `node -e "import('./dist/background/messages.js').then(() => console.log('runtime check ok'))"`
+- Verification (manual): open any page, then check the page console for `[JobFill Extension] ping response PONG`.

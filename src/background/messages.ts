@@ -72,5 +72,10 @@ export type MessageRequest = MessageRequestMap[MessageType];
 export type MessageResponse = MessageResponseMap[MessageType];
 
 export const initializeBackground = (): void => {
-  // Placeholder for message listeners.
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (isPingMessage(message)) {
+      const response: PongResponse = { type: 'PONG' };
+      sendResponse(response);
+    }
+  });
 };
