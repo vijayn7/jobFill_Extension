@@ -12,3 +12,11 @@ export type MemoryEntry = {
   answerText: string;
   createdAt: string;
 };
+
+export type PingMessage = {
+  type: 'PING';
+};
+
+export type PongResponse = {
+  type: 'PONG';
+};
