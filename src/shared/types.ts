@@ -13,10 +13,26 @@ export type MemoryEntry = {
   createdAt: string;
 };
 
-export type PingMessage = {
-  type: 'PING';
+export type MemoryEntryInput = {
+  questionText: string;
+  answerText: string;
 };
 
-export type PongResponse = {
-  type: 'PONG';
+export type MemoryEntryUpdate = {
+  id: string;
+  questionText?: string;
+  answerText?: string;
+};
+
+export type Suggestion = {
+  entry: MemoryEntry;
+  score: number;
+};
+
+export type ExportJsonResult = {
+  json: string;
+};
+
+export type ImportJsonPayload = {
+  json: string;
 };
