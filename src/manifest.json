@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "JobFill Extension",
+  "version": "0.1.0",
+  "description": "Helps users complete job applications faster.",
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+  "options_page": "options/options.html"
+}
