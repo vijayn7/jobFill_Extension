@@ -4,14 +4,25 @@ import { startFocusTracking } from './focus';
 import { startSettingsListener } from './state';
 import { initWidget } from './ui/widget';
 
-const ping: PingRequest = { type: MessageType.PING };
-
-chrome.runtime.sendMessage(ping, (response: PingResponse) => {
-  if (response?.type === MessageType.PING && response.ok) {
-    console.debug('JobFill extension received PING response.');
+declare global {
+  interface Window {
+    __jobfill_initialized?: boolean;
   }
-});
+}
 
-startFocusTracking();
-startSettingsListener();
-initWidget();
+// Prevent multiple initializations
+if (!window.__jobfill_initialized) {
+  window.__jobfill_initialized = true;
+
+  const ping: PingRequest = { type: MessageType.PING };
+
+  chrome.runtime.sendMessage(ping, (response: PingResponse) => {
+    if (response?.type === MessageType.PING && response.ok) {
+      console.debug('JobFill extension received PING response.');
+    }
+  });
+
+  startFocusTracking();
+  startSettingsListener();
+  initWidget();
+}
