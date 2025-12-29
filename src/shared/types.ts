@@ -9,3 +9,11 @@ export interface MemoryEntry {
   createdAt: string;
   value: string;
 }
+
+export interface PingMessage {
+  type: 'PING';
+}
+
+export interface PongMessage {
+  type: 'PONG';
+}
