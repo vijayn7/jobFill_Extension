@@ -1,1 +1,1 @@
-- Manual testing: not run (field fill utilities).
+- Manual testing: not run (content focus tracking/extraction changes only).

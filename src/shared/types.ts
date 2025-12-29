@@ -1,8 +1,27 @@
 export interface FieldContext {
   id?: string;
+  name?: string;
   label?: string;
   value?: string;
+  question_text?: string;
+  section_heading?: string;
+  nearby_text?: string;
+  placeholder?: string;
+  required?: boolean;
+  maxlength?: number;
+  pattern?: string;
+  input_type?: string;
+  select_options?: string[];
+  url?: string;
+  domain?: string;
+  page_title?: string;
 }
+
+export type FieldElement =
+  | HTMLInputElement
+  | HTMLTextAreaElement
+  | HTMLSelectElement
+  | HTMLElement;
 
 export type StorageFieldType = 'string' | 'number' | 'object';
 

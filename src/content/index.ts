@@ -1,5 +1,6 @@
 import { MessageType } from '../background/messages';
 import type { PingRequest, PingResponse } from '../shared/types';
+import { startFocusTracking } from './focus';
 
 const ping: PingRequest = { type: MessageType.PING };
 
@@ -8,3 +9,5 @@ chrome.runtime.sendMessage(ping, (response: PingResponse) => {
     console.debug('JobFill extension received PING response.');
   }
 });
+
+startFocusTracking();
