@@ -1,0 +1,22 @@
+{
+  "name": "jobfill-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint \"src/**/*.ts\"",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.6.0",
+    "@typescript-eslint/parser": "^7.6.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0",
+    "vite-plugin-static-copy": "^1.0.5"
+  }
+}
