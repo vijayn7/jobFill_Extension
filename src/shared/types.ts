@@ -32,6 +32,16 @@ export interface ExtensionSettings {
   sensitiveHandling: SensitiveHandling;
 }
 
+export type ProfileFieldKey = 'email' | 'phone' | 'linkedin' | 'github' | 'resumeText';
+
+export interface ProfileData {
+  email: string;
+  phone: string;
+  linkedin: string;
+  github: string;
+  resumeText: string;
+}
+
 export type FieldElement =
   | HTMLInputElement
   | HTMLTextAreaElement
