@@ -1,5 +1,13 @@
 import { MessageType } from '../../background/messages';
-import type { FieldContext, FieldElement, SaveAnswerRequest } from '../../shared/types';
+import type {
+  FieldContext,
+  FieldElement,
+  GetSuggestionsRequest,
+  GetSuggestionsResponse,
+  MemoryEntry,
+  SaveAnswerRequest,
+  SaveAnswerResponse,
+} from '../../shared/types';
 import { buildFieldContext } from '../extract/context';
 import { normalizeFieldElement } from '../extract/fieldTypes';
 import { setContentEditableValue } from '../fill/contenteditable';
@@ -16,6 +24,7 @@ const DRAFT_SELECTOR = '[data-jobfill-draft]';
 let widgetRoot: HTMLDivElement | null = null;
 let activeField: FieldElement | null = null;
 let activeContext: FieldContext | null = null;
+let suggestionRequestToken = 0;
 
 const ensureStyles = (): void => {
   if (document.querySelector(`link[${STYLE_MARKER}]`)) {
@@ -87,7 +96,7 @@ const updateWidgetContent = (context: FieldContext, resetDraft: boolean): void =
 
   const suggestions = widgetRoot.querySelector<HTMLElement>(SUGGESTIONS_SELECTOR);
   if (suggestions) {
-    suggestions.textContent = 'Suggestions will appear here.';
+    suggestions.textContent = 'Fetching suggestions...';
   }
 
   if (resetDraft) {
@@ -96,6 +105,68 @@ const updateWidgetContent = (context: FieldContext, resetDraft: boolean): void =
       draft.value = context.value ?? '';
     }
   }
+};
+
+const renderSuggestions = (suggestions: MemoryEntry[]): void => {
+  if (!widgetRoot) {
+    return;
+  }
+
+  const container = widgetRoot.querySelector<HTMLElement>(SUGGESTIONS_SELECTOR);
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = '';
+
+  if (suggestions.length === 0) {
+    container.textContent = 'No matching suggestions yet.';
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'jobfill-widget__suggestion-list';
+
+  suggestions.forEach((suggestion) => {
+    const item = document.createElement('div');
+    item.className = 'jobfill-widget__suggestion';
+
+    const question = document.createElement('div');
+    question.className = 'jobfill-widget__suggestion-question';
+    question.textContent = suggestion.question_text || 'Saved answer';
+
+    const answer = document.createElement('div');
+    answer.className = 'jobfill-widget__suggestion-answer';
+    answer.textContent = suggestion.answer_text;
+
+    item.appendChild(question);
+    item.appendChild(answer);
+    list.appendChild(item);
+  });
+
+  container.appendChild(list);
+};
+
+const requestSuggestions = (context: FieldContext): void => {
+  const request: GetSuggestionsRequest = {
+    type: MessageType.GET_SUGGESTIONS,
+    payload: {
+      field: context,
+      limit: 5,
+    },
+  };
+
+  const requestToken = (suggestionRequestToken += 1);
+
+  chrome.runtime.sendMessage(request, (response: GetSuggestionsResponse) => {
+    if (!response || response.type !== MessageType.GET_SUGGESTIONS) {
+      return;
+    }
+    if (requestToken !== suggestionRequestToken) {
+      return;
+    }
+    renderSuggestions(response.payload.suggestions);
+  });
 };
 
 const positionWidget = (field: FieldElement): void => {
@@ -174,7 +245,14 @@ const saveDraft = (): void => {
     },
   };
 
-  chrome.runtime.sendMessage(request);
+  chrome.runtime.sendMessage(request, (response: SaveAnswerResponse) => {
+    if (!response || response.type !== MessageType.SAVE_ANSWER) {
+      return;
+    }
+    if (activeContext) {
+      requestSuggestions(activeContext);
+    }
+  });
 };
 
 const clearDraft = (): void => {
@@ -206,6 +284,9 @@ const handleFocusIn = (event: FocusEvent): void => {
   activeContext = context;
 
   updateWidgetContent(context, isNewField);
+  if (isNewField) {
+    requestSuggestions(context);
+  }
   showWidget();
   positionWidget(field);
 };
@@ -255,6 +336,7 @@ export const initWidget = (): void => {
       activeField = field;
       activeContext = context;
       updateWidgetContent(context, true);
+      requestSuggestions(context);
       showWidget();
       positionWidget(field);
     }
