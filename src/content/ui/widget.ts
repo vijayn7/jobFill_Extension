@@ -152,6 +152,16 @@ const updateWarning = (message: string | null): void => {
 };
 
 const updateSuggestionsPlaceholder = (message: string): void => {
+  if (!widgetRoot) {
+    return;
+  }
+
+  const suggestions = widgetRoot.querySelector<HTMLElement>(SUGGESTIONS_SELECTOR);
+  if (suggestions) {
+    suggestions.textContent = message;
+  }
+};
+
 const formatScore = (score: number): string => `${Math.round(score * 100)}% match`;
 
 const getAnswerPreview = (answer: string): string => {
@@ -167,10 +177,23 @@ const applySuggestion = (suggestion: MemoryEntry): void => {
     return;
   }
 
-  const suggestions = widgetRoot.querySelector<HTMLElement>(SUGGESTIONS_SELECTOR);
-  if (suggestions) {
-    suggestions.textContent = message;
+  const draft = widgetRoot.querySelector<HTMLTextAreaElement>(DRAFT_SELECTOR);
+  if (draft) {
+    draft.value = suggestion.answer_text;
   }
+
+  const request: MarkUsedRequest = {
+    type: MessageType.MARK_USED,
+    payload: {
+      entryId: suggestion.id,
+    },
+  };
+
+  chrome.runtime.sendMessage(request, (response: MarkUsedResponse) => {
+    if (!response || response.type !== MessageType.MARK_USED) {
+      return;
+    }
+  });
 };
 
 const applySensitiveState = (
@@ -208,26 +231,6 @@ const applySensitiveState = (
   if (fillButton) {
     fillButton.disabled = handling === 'block';
   }
-};
-
-const renderSuggestions = (suggestions: MemoryEntry[]): void => {
-  const draft = widgetRoot.querySelector<HTMLTextAreaElement>(DRAFT_SELECTOR);
-  if (draft) {
-    draft.value = suggestion.answer_text;
-  }
-
-  const request: MarkUsedRequest = {
-    type: MessageType.MARK_USED,
-    payload: {
-      entryId: suggestion.id,
-    },
-  };
-
-  chrome.runtime.sendMessage(request, (response: MarkUsedResponse) => {
-    if (!response || response.type !== MessageType.MARK_USED) {
-      return;
-    }
-  });
 };
 
 const renderSuggestions = (suggestions: SuggestionEntry[]): void => {
