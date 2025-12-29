@@ -10,6 +10,14 @@ import type {
   MarkUsedResponse,
   SaveAnswerRequest,
   SaveAnswerResponse,
+  ListEntriesResponse,
+  UpdateEntryRequest,
+  UpdateEntryResponse,
+  DeleteEntryRequest,
+  DeleteEntryResponse,
+  ExportJsonResponse,
+  ImportJsonRequest,
+  ImportJsonResponse,
   MemoryEntry,
 } from '../shared/types';
 import {
@@ -17,6 +25,8 @@ import {
   listMemoryEntries,
   createMemoryEntry,
   updateMemoryEntry,
+  deleteMemoryEntry,
+  replaceMemoryEntries,
 } from './storage/memoryStore';
 import { scoreSuggestions } from './matching/scoring';
 import { getCachedSuggestions, setCachedSuggestions, clearCachedSuggestions } from './matching/cache';
@@ -124,6 +134,93 @@ const handleMarkUsed = async (request: MarkUsedRequest): Promise<MarkUsedRespons
   };
 };
 
+const handleListEntries = async (): Promise<ListEntriesResponse> => {
+  const entries = await listMemoryEntries();
+  return {
+    type: MessageType.LIST_ENTRIES,
+    payload: { entries },
+  };
+};
+
+const handleUpdateEntry = async (
+  request: UpdateEntryRequest,
+): Promise<UpdateEntryResponse> => {
+  const now = new Date().toISOString();
+  const updated = await updateMemoryEntry(request.payload.entryId, {
+    answer_text: request.payload.value,
+    updated_at: now,
+  });
+
+  if (!updated) {
+    throw new Error('Entry not found.');
+  }
+
+  return {
+    type: MessageType.UPDATE_ENTRY,
+    payload: { entry: updated },
+  };
+};
+
+const handleDeleteEntry = async (
+  request: DeleteEntryRequest,
+): Promise<DeleteEntryResponse> => {
+  await deleteMemoryEntry(request.payload.entryId);
+  return {
+    type: MessageType.DELETE_ENTRY,
+    acknowledged: true,
+  };
+};
+
+const handleExportJson = async (): Promise<ExportJsonResponse> => {
+  const entries = await listMemoryEntries();
+  return {
+    type: MessageType.EXPORT_JSON,
+    payload: {
+      json: JSON.stringify(entries, null, 2),
+    },
+  };
+};
+
+const parseImportJson = (json: string): MemoryEntry[] => {
+  const parsed = JSON.parse(json) as unknown;
+  if (!Array.isArray(parsed)) {
+    throw new Error('Import data must be an array.');
+  }
+
+  const entries = parsed.filter((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return false;
+    }
+    const candidate = entry as MemoryEntry;
+    return (
+      typeof candidate.id === 'string' &&
+      typeof candidate.question_text === 'string' &&
+      typeof candidate.answer_text === 'string' &&
+      typeof candidate.answer_type === 'string' &&
+      typeof candidate.created_at === 'string' &&
+      typeof candidate.updated_at === 'string' &&
+      typeof candidate.usage_count === 'number' &&
+      typeof candidate.meta?.domain === 'string' &&
+      typeof candidate.meta?.platform === 'string' &&
+      typeof candidate.meta?.section === 'string' &&
+      typeof candidate.meta?.field_type === 'string'
+    );
+  });
+
+  return entries as MemoryEntry[];
+};
+
+const handleImportJson = async (
+  request: ImportJsonRequest,
+): Promise<ImportJsonResponse> => {
+  const entries = parseImportJson(request.payload.json);
+  await replaceMemoryEntries(entries);
+  return {
+    type: MessageType.IMPORT_JSON,
+    acknowledged: true,
+  };
+};
+
 export const handleBackgroundMessage = async (
   message: BackgroundMessage,
   tabId?: number,
@@ -137,6 +234,16 @@ export const handleBackgroundMessage = async (
       return handleSaveAnswer(message, tabId);
     case MessageType.MARK_USED:
       return handleMarkUsed(message);
+    case MessageType.LIST_ENTRIES:
+      return handleListEntries();
+    case MessageType.UPDATE_ENTRY:
+      return handleUpdateEntry(message);
+    case MessageType.DELETE_ENTRY:
+      return handleDeleteEntry(message);
+    case MessageType.EXPORT_JSON:
+      return handleExportJson();
+    case MessageType.IMPORT_JSON:
+      return handleImportJson(message);
     default:
       return null;
   }

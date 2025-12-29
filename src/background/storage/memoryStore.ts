@@ -33,6 +33,16 @@ export const deleteMemoryEntry = async (id: string): Promise<void> => {
   await db.delete(memoryStoreName, id);
 };
 
+export const replaceMemoryEntries = async (entries: MemoryEntry[]): Promise<void> => {
+  const db = await getDb();
+  const tx = db.transaction(memoryStoreName, 'readwrite');
+  await tx.store.clear();
+  for (const entry of entries) {
+    await tx.store.put(entry);
+  }
+  await tx.done;
+};
+
 const sortByUpdatedAtDesc = (entries: MemoryEntry[]) =>
   [...entries].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 
