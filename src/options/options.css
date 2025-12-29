@@ -2,6 +2,7 @@ body {
   font-family: sans-serif;
   margin: 0;
   padding: 16px;
+  background: #f8fafc;
 }
 
 .settings {
@@ -32,4 +33,164 @@ body {
   gap: 8px;
   margin-top: 12px;
   font-size: 14px;
+}
+
+.options-layout {
+  display: grid;
+  gap: 24px;
+}
+
+.memory-manager {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  background: #ffffff;
+}
+
+.memory-manager__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.memory-manager__header h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.memory-manager__summary {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.memory-manager__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.memory-manager__controls input,
+.memory-manager__controls select,
+.memory-editor__input {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.memory-manager__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.memory-entry {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.memory-entry__question {
+  font-weight: 600;
+}
+
+.memory-entry__answer {
+  color: #334155;
+  font-size: 14px;
+}
+
+.memory-entry__meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.memory-entry__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.memory-manager__empty {
+  padding: 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+}
+
+.memory-manager__pagination {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.memory-manager__import-export {
+  margin-top: 16px;
+}
+
+.memory-manager__status {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.import-export {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.import-export__label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.memory-editor__actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.button--ghost {
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+.button--danger {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

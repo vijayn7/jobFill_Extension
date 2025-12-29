@@ -251,6 +251,15 @@ export interface ImportJsonResponse {
   acknowledged: true;
 }
 
+export interface MemoryManagerState {
+  entries: MemoryEntry[];
+  searchText: string;
+  domainFilter: string;
+  answerTypeFilter: string;
+  page: number;
+  pageSize: number;
+}
+
 export type RequestMessage =
   | PingRequest
   | FieldFocusedRequest
