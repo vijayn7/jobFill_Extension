@@ -6,11 +6,18 @@ import { MessageType } from './messages';
 import type {
   GetSuggestionsRequest,
   GetSuggestionsResponse,
+  MarkUsedRequest,
+  MarkUsedResponse,
   SaveAnswerRequest,
   SaveAnswerResponse,
   MemoryEntry,
 } from '../shared/types';
-import { listMemoryEntries, createMemoryEntry } from './storage/memoryStore';
+import {
+  getMemoryEntry,
+  listMemoryEntries,
+  createMemoryEntry,
+  updateMemoryEntry,
+} from './storage/memoryStore';
 import { scoreSuggestions } from './matching/scoring';
 import { getCachedSuggestions, setCachedSuggestions, clearCachedSuggestions } from './matching/cache';
 
@@ -99,6 +106,24 @@ const handleSaveAnswer = async (
   };
 };
 
+const handleMarkUsed = async (request: MarkUsedRequest): Promise<MarkUsedResponse> => {
+  const now = new Date().toISOString();
+  const existing = await getMemoryEntry(request.payload.entryId);
+
+  if (existing) {
+    await updateMemoryEntry(existing.id, {
+      usage_count: existing.usage_count + 1,
+      last_used_at: now,
+      updated_at: now,
+    });
+  }
+
+  return {
+    type: MessageType.MARK_USED,
+    acknowledged: true,
+  };
+};
+
 export const handleBackgroundMessage = async (
   message: BackgroundMessage,
   tabId?: number,
@@ -110,6 +135,8 @@ export const handleBackgroundMessage = async (
       return handleGetSuggestions(message, tabId);
     case MessageType.SAVE_ANSWER:
       return handleSaveAnswer(message, tabId);
+    case MessageType.MARK_USED:
+      return handleMarkUsed(message);
     default:
       return null;
   }
