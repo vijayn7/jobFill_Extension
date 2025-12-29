@@ -1,1 +1,131 @@
-/* Placeholder styles for the content UI. */
+:root {
+  --jobfill-bg: #ffffff;
+  --jobfill-border: #e2e8f0;
+  --jobfill-text: #1f2937;
+  --jobfill-muted: #64748b;
+  --jobfill-primary: #2563eb;
+  --jobfill-primary-text: #ffffff;
+  --jobfill-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.jobfill-widget {
+  position: absolute;
+  z-index: 999999;
+  width: 360px;
+  background: var(--jobfill-bg);
+  border: 1px solid var(--jobfill-border);
+  border-radius: 12px;
+  box-shadow: var(--jobfill-shadow);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: var(--jobfill-text);
+  padding: 16px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.jobfill-widget--hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+.jobfill-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.jobfill-widget__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.jobfill-widget__action {
+  background: none;
+  border: none;
+  color: var(--jobfill-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.jobfill-widget__section {
+  margin-bottom: 12px;
+}
+
+.jobfill-widget__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--jobfill-muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.jobfill-widget__question {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.jobfill-widget__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.jobfill-widget__pill {
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.jobfill-widget__pill--muted {
+  background: #f1f5f9;
+  color: var(--jobfill-muted);
+}
+
+.jobfill-widget__placeholder {
+  font-size: 12px;
+  color: var(--jobfill-muted);
+  background: #f8fafc;
+  border: 1px dashed var(--jobfill-border);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.jobfill-widget__textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--jobfill-border);
+  padding: 8px 10px;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 72px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.jobfill-widget__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.jobfill-widget__button {
+  border-radius: 8px;
+  border: 1px solid var(--jobfill-border);
+  background: #f8fafc;
+  color: var(--jobfill-text);
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.jobfill-widget__button--primary {
+  background: var(--jobfill-primary);
+  border-color: var(--jobfill-primary);
+  color: var(--jobfill-primary-text);
+}
