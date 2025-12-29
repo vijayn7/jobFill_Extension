@@ -15,13 +15,16 @@ import type {
 } from '../../shared/types';
 import { detectSensitiveField } from '../../shared/sensitive';
 import { DEFAULT_SETTINGS } from '../../shared/settings';
+import { createAutofillRunner } from '../autofill/runner';
 import { buildFieldContext } from '../extract/context';
 import { normalizeFieldElement } from '../extract/fieldTypes';
 import { setContentEditableValue } from '../fill/contenteditable';
 import { setSelectValue } from '../fill/select';
 import { setInputValue } from '../fill/setValue';
-import { getSettings } from '../state';
+import { focusNextField, waitForSelectChange } from '../navigation/nextField';
+import { getContentSettings, getSettings } from '../state';
 import { createWidget } from './render';
+import { calculateAnchoredPosition } from './position';
 
 const STYLE_MARKER = 'data-jobfill-style';
 const QUESTION_SELECTOR = '[data-jobfill-question]';
@@ -29,6 +32,8 @@ const META_SELECTOR = '[data-jobfill-meta]';
 const SUGGESTIONS_SELECTOR = '[data-jobfill-suggestions]';
 const DRAFT_SELECTOR = '[data-jobfill-draft]';
 const WARNING_SELECTOR = '[data-jobfill-warning]';
+const AUTOFILL_STATUS_SELECTOR = '[data-jobfill-autofill-status]';
+const AUTOFILL_SKIPPED_SELECTOR = '[data-jobfill-autofill-skipped]';
 
 let widgetRoot: HTMLDivElement | null = null;
 let activeField: FieldElement | null = null;
@@ -37,6 +42,15 @@ let activeSensitive: SensitiveFieldDetection | null = null;
 let activeSensitiveHandling: SensitiveHandling = DEFAULT_SETTINGS.sensitiveHandling;
 let suggestionRequestToken = 0;
 let focusToken = 0;
+let isPinned = false;
+let pendingPositionFrame: number | null = null;
+let autofillRunner: ReturnType<typeof createAutofillRunner> | null = null;
+let autofillState = {
+  running: false,
+  total: 0,
+  completed: 0,
+  skipped: 0,
+};
 
 const ensureStyles = (): void => {
   if (document.querySelector(`link[${STYLE_MARKER}]`)) {
@@ -328,30 +342,17 @@ const positionWidget = (field: FieldElement): void => {
   if (!widgetRoot) {
     return;
   }
+  if (isPinned) {
+    return;
+  }
 
-  const rect = field.getBoundingClientRect();
-  const scrollX = window.scrollX || window.pageXOffset;
-  const scrollY = window.scrollY || window.pageYOffset;
+  const position = calculateAnchoredPosition(field, widgetRoot, {
+    avoidBelow: field instanceof HTMLSelectElement,
+  });
 
-  const desiredTop = rect.bottom + scrollY + 8;
-  const desiredLeft = rect.left + scrollX;
-
-  const viewportWidth = document.documentElement.clientWidth;
-  const viewportHeight = document.documentElement.clientHeight;
-
-  const widgetWidth = widgetRoot.offsetWidth || 360;
-  const widgetHeight = widgetRoot.offsetHeight || 240;
-
-  const minLeft = scrollX + 8;
-  const maxLeft = scrollX + viewportWidth - widgetWidth - 8;
-  const minTop = scrollY + 8;
-  const maxTop = scrollY + viewportHeight - widgetHeight - 8;
-
-  const left = Math.min(Math.max(desiredLeft, minLeft), Math.max(minLeft, maxLeft));
-  const top = Math.min(Math.max(desiredTop, minTop), Math.max(minTop, maxTop));
-
-  widgetRoot.style.left = `${left}px`;
-  widgetRoot.style.top = `${top}px`;
+  widgetRoot.dataset.anchor = position.placement;
+  widgetRoot.style.left = `${position.left}px`;
+  widgetRoot.style.top = `${position.top}px`;
 };
 
 const showWidget = (): void => {
@@ -362,7 +363,100 @@ const hideWidget = (): void => {
   widgetRoot?.classList.add('jobfill-widget--hidden');
 };
 
+const schedulePositionUpdate = (): void => {
+  if (
+    !activeField
+    || !widgetRoot
+    || isPinned
+    || widgetRoot.classList.contains('jobfill-widget--hidden')
+  ) {
+    return;
+  }
+
+  if (pendingPositionFrame !== null) {
+    return;
+  }
+
+  pendingPositionFrame = window.requestAnimationFrame(() => {
+    pendingPositionFrame = null;
+    if (activeField) {
+      positionWidget(activeField);
+    }
+  });
+};
+
+const updatePinState = (pinned: boolean): void => {
+  if (!widgetRoot) {
+    return;
+  }
+
+  isPinned = pinned;
+  widgetRoot.classList.toggle('jobfill-widget--pinned', pinned);
+
+  const pinButton = widgetRoot.querySelector<HTMLButtonElement>(
+    '[data-jobfill-action="pin"]',
+  );
+  if (pinButton) {
+    pinButton.textContent = pinned ? 'Unpin' : 'Pin';
+  }
+
+  if (pinned) {
+    const rect = widgetRoot.getBoundingClientRect();
+    widgetRoot.style.position = 'fixed';
+    widgetRoot.style.left = `${rect.left}px`;
+    widgetRoot.style.top = `${rect.top}px`;
+  } else {
+    widgetRoot.style.position = 'absolute';
+    if (activeField) {
+      positionWidget(activeField);
+    }
+  }
+};
+
+const updateAutofillUI = (state: {
+  running: boolean;
+  total: number;
+  completed: number;
+  skipped: number;
+}): void => {
+  if (!widgetRoot) {
+    return;
+  }
+
+  const status = widgetRoot.querySelector<HTMLElement>(AUTOFILL_STATUS_SELECTOR);
+  const skippedElement = widgetRoot.querySelector<HTMLElement>(AUTOFILL_SKIPPED_SELECTOR);
+  const stopButton = widgetRoot.querySelector<HTMLButtonElement>(
+    '[data-jobfill-action="autofill-stop"]',
+  );
+  const startButton = widgetRoot.querySelector<HTMLButtonElement>(
+    '[data-jobfill-action="autofill"]',
+  );
+
+  if (status) {
+    status.textContent = `Autofill running: ${state.completed} of ${state.total}`;
+    status.toggleAttribute('hidden', !state.running);
+  }
+
+  if (skippedElement) {
+    skippedElement.textContent = `Skipped: ${state.skipped}`;
+    skippedElement.toggleAttribute('hidden', !state.running);
+  }
+
+  if (stopButton) {
+    stopButton.toggleAttribute('hidden', !state.running);
+    stopButton.disabled = !state.running;
+  }
+
+  if (startButton) {
+    startButton.disabled = state.running;
+  }
+};
+
 const fillActiveField = (): void => {
+  void fillActiveFieldAsync();
+};
+
+const fillActiveFieldAsync = async (): Promise<void> => {
   if (!activeField || !widgetRoot) {
     return;
   }
@@ -377,12 +471,28 @@ const fillActiveField = (): void => {
   }
 
   const value = draft.value;
+  const contentSettings = await getContentSettings();
+
+  if (activeField instanceof HTMLSelectElement) {
+    const waitForChange = contentSettings.advanceAfterFill
+      ? waitForSelectChange(activeField)
+      : Promise.resolve();
+    setSelectValue(activeField, value);
+    await waitForChange;
+    if (contentSettings.advanceAfterFill) {
+      focusNextField(activeField);
+    }
+    return;
+  }
+
   if (activeField instanceof HTMLInputElement || activeField instanceof HTMLTextAreaElement) {
     setInputValue(activeField, value);
-  } else if (activeField instanceof HTMLSelectElement) {
-    setSelectValue(activeField, value);
   } else if (activeField.isContentEditable) {
     setContentEditableValue(activeField, value);
+  }
+
+  if (contentSettings.advanceAfterFill) {
+    focusNextField(activeField);
   }
 };
 
@@ -425,6 +535,46 @@ const clearDraft = (): void => {
   }
 };
 
+const startAutofill = async (): Promise<void> => {
+  if (autofillRunner?.isRunning()) {
+    return;
+  }
+
+  const [settings, contentSettings] = await Promise.all([
+    getSettings(),
+    getContentSettings(),
+  ]);
+
+  autofillRunner = createAutofillRunner(settings, contentSettings, {
+    onProgress: (state) => {
+      autofillState = state;
+      updateAutofillUI(state);
+    },
+  });
+
+  autofillState = {
+    running: true,
+    total: 0,
+    completed: 0,
+    skipped: 0,
+  };
+  updateAutofillUI(autofillState);
+
+  await autofillRunner.start();
+};
+
+const stopAutofill = (): void => {
+  if (!autofillRunner) {
+    return;
+  }
+  autofillRunner.cancel();
+  autofillState = {
+    ...autofillState,
+    running: false,
+  };
+  updateAutofillUI(autofillState);
+};
+
 const handleFocusIn = (event: FocusEvent): void => {
   void handleFocusInAsync(event);
 };
@@ -465,11 +615,7 @@ const handleFocusInAsync = async (event: FocusEvent): Promise<void> => {
 };
 
 const handleScroll = (): void => {
-  if (!activeField || !widgetRoot || widgetRoot.classList.contains('jobfill-widget--hidden')) {
-    return;
-  }
-
-  positionWidget(activeField);
+  schedulePositionUpdate();
 };
 
 const ensureWidget = (): HTMLDivElement => {
@@ -484,11 +630,23 @@ const ensureWidget = (): HTMLDivElement => {
   const saveButton = widgetRoot.querySelector<HTMLButtonElement>('[data-jobfill-action="save"]');
   const clearButton = widgetRoot.querySelector<HTMLButtonElement>('[data-jobfill-action="clear"]');
   const hideButton = widgetRoot.querySelector<HTMLButtonElement>('[data-jobfill-action="hide"]');
+  const pinButton = widgetRoot.querySelector<HTMLButtonElement>('[data-jobfill-action="pin"]');
+  const autofillButton = widgetRoot.querySelector<HTMLButtonElement>(
+    '[data-jobfill-action="autofill"]',
+  );
+  const autofillStopButton = widgetRoot.querySelector<HTMLButtonElement>(
+    '[data-jobfill-action="autofill-stop"]',
+  );
 
   fillButton?.addEventListener('click', fillActiveField);
   saveButton?.addEventListener('click', saveDraft);
   clearButton?.addEventListener('click', clearDraft);
   hideButton?.addEventListener('click', hideWidget);
+  pinButton?.addEventListener('click', () => updatePinState(!isPinned));
+  autofillButton?.addEventListener('click', () => void startAutofill());
+  autofillStopButton?.addEventListener('click', stopAutofill);
+
+  updateAutofillUI(autofillState);
 
   return widgetRoot;
 };

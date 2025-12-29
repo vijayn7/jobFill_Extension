@@ -8,3 +8,6 @@
 - Manual testing: not run (profile store + structured autofill).
 - Manual testing: not run (not requested for embeddings matching).
 - Manual testing: not run (platform detection and ATS label handling require extension runtime).
+- Manual testing: not run (extension runtime required). Steps: On testsite, focus a select field and confirm the widget anchors left/right without covering dropdown options; scroll the page to confirm it follows the field.
+- Manual testing: not run (extension runtime required). Steps: On testsite, click Fill on a field and confirm focus advances to the next eligible field; ensure select fields advance after change.
+- Manual testing: not run (extension runtime required). Steps: On testsite, click Autofill page, confirm progress UI updates with running/skipped counts, verify fields with high-confidence suggestions fill, and stop cancels immediately.
