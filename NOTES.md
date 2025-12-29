@@ -1,1 +1,1 @@
-- Manual testing: not run (content focus tracking/extraction changes only).
+- Manual testing: not run (widget UI/fill flow not exercised).
