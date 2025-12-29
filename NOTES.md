@@ -1,2 +1,1 @@
-- Manual testing: not run (widget UI/fill flow not exercised).
-- Manual testing: not run (storage changes only).
+- Manual testing: not run (matching/suggestions flow not exercised).
