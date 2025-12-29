@@ -9,13 +9,18 @@ import type {
   MemoryEntry,
   SaveAnswerRequest,
   SaveAnswerResponse,
+  SensitiveFieldDetection,
+  SensitiveHandling,
   SuggestionEntry,
 } from '../../shared/types';
+import { detectSensitiveField } from '../../shared/sensitive';
+import { DEFAULT_SETTINGS } from '../../shared/settings';
 import { buildFieldContext } from '../extract/context';
 import { normalizeFieldElement } from '../extract/fieldTypes';
 import { setContentEditableValue } from '../fill/contenteditable';
 import { setSelectValue } from '../fill/select';
 import { setInputValue } from '../fill/setValue';
+import { getSettings } from '../state';
 import { createWidget } from './render';
 
 const STYLE_MARKER = 'data-jobfill-style';
@@ -23,11 +28,15 @@ const QUESTION_SELECTOR = '[data-jobfill-question]';
 const META_SELECTOR = '[data-jobfill-meta]';
 const SUGGESTIONS_SELECTOR = '[data-jobfill-suggestions]';
 const DRAFT_SELECTOR = '[data-jobfill-draft]';
+const WARNING_SELECTOR = '[data-jobfill-warning]';
 
 let widgetRoot: HTMLDivElement | null = null;
 let activeField: FieldElement | null = null;
 let activeContext: FieldContext | null = null;
+let activeSensitive: SensitiveFieldDetection | null = null;
+let activeSensitiveHandling: SensitiveHandling = DEFAULT_SETTINGS.sensitiveHandling;
 let suggestionRequestToken = 0;
+let focusToken = 0;
 
 const ensureStyles = (): void => {
   if (document.querySelector(`link[${STYLE_MARKER}]`)) {
@@ -110,6 +119,39 @@ const updateWidgetContent = (context: FieldContext, resetDraft: boolean): void =
   }
 };
 
+const formatSensitiveMatches = (matches: SensitiveFieldDetection['matches']): string => {
+  const labelMap: Record<SensitiveFieldDetection['matches'][number], string> = {
+    ssn: 'SSN',
+    dob: 'DOB',
+    passport: 'passport',
+    bank: 'bank account',
+    tax_id: 'tax ID',
+  };
+
+  return matches.map((match) => labelMap[match]).join(', ');
+};
+
+const updateWarning = (message: string | null): void => {
+  if (!widgetRoot) {
+    return;
+  }
+
+  const warning = widgetRoot.querySelector<HTMLElement>(WARNING_SELECTOR);
+  if (!warning) {
+    return;
+  }
+
+  if (!message) {
+    warning.setAttribute('hidden', 'true');
+    warning.textContent = '';
+    return;
+  }
+
+  warning.removeAttribute('hidden');
+  warning.textContent = message;
+};
+
+const updateSuggestionsPlaceholder = (message: string): void => {
 const formatScore = (score: number): string => `${Math.round(score * 100)}% match`;
 
 const getAnswerPreview = (answer: string): string => {
@@ -125,6 +167,50 @@ const applySuggestion = (suggestion: MemoryEntry): void => {
     return;
   }
 
+  const suggestions = widgetRoot.querySelector<HTMLElement>(SUGGESTIONS_SELECTOR);
+  if (suggestions) {
+    suggestions.textContent = message;
+  }
+};
+
+const applySensitiveState = (
+  detection: SensitiveFieldDetection,
+  handling: SensitiveHandling,
+): void => {
+  if (!widgetRoot) {
+    return;
+  }
+
+  const fillButton = widgetRoot.querySelector<HTMLButtonElement>(
+    '[data-jobfill-action="fill"]',
+  );
+
+  if (!detection.isSensitive) {
+    activeSensitive = detection;
+    activeSensitiveHandling = handling;
+    updateWarning(null);
+    if (fillButton) {
+      fillButton.disabled = false;
+    }
+    return;
+  }
+
+  const matchList = formatSensitiveMatches(detection.matches);
+  const warningText =
+    handling === 'block'
+      ? `Sensitive field detected (${matchList}). Autofill is blocked.`
+      : `Sensitive field detected (${matchList}). Autofill is allowed, but suggestions are hidden.`;
+
+  activeSensitive = detection;
+  activeSensitiveHandling = handling;
+  updateWarning(warningText);
+  updateSuggestionsPlaceholder('Suggestions are hidden for sensitive fields.');
+  if (fillButton) {
+    fillButton.disabled = handling === 'block';
+  }
+};
+
+const renderSuggestions = (suggestions: MemoryEntry[]): void => {
   const draft = widgetRoot.querySelector<HTMLTextAreaElement>(DRAFT_SELECTOR);
   if (draft) {
     draft.value = suggestion.answer_text;
@@ -206,6 +292,10 @@ const renderSuggestions = (suggestions: SuggestionEntry[]): void => {
   container.appendChild(list);
 };
 
+const isFillBlocked = (): boolean => {
+  return Boolean(activeSensitive?.isSensitive && activeSensitiveHandling === 'block');
+};
+
 const requestSuggestions = (context: FieldContext): void => {
   const request: GetSuggestionsRequest = {
     type: MessageType.GET_SUGGESTIONS,
@@ -222,6 +312,9 @@ const requestSuggestions = (context: FieldContext): void => {
       return;
     }
     if (requestToken !== suggestionRequestToken) {
+      return;
+    }
+    if (activeSensitive?.isSensitive) {
       return;
     }
     renderSuggestions(response.payload.suggestions);
@@ -268,6 +361,10 @@ const hideWidget = (): void => {
 
 const fillActiveField = (): void => {
   if (!activeField || !widgetRoot) {
+    return;
+  }
+
+  if (isFillBlocked()) {
     return;
   }
 
@@ -326,6 +423,10 @@ const clearDraft = (): void => {
 };
 
 const handleFocusIn = (event: FocusEvent): void => {
+  void handleFocusInAsync(event);
+};
+
+const handleFocusInAsync = async (event: FocusEvent): Promise<void> => {
   const target = event.target;
   if (widgetRoot && target instanceof Node && widgetRoot.contains(target)) {
     return;
@@ -338,12 +439,22 @@ const handleFocusIn = (event: FocusEvent): void => {
 
   const context = buildFieldContext(field);
   const isNewField = field !== activeField;
+  const focusId = (focusToken += 1);
+  const settings = await getSettings();
+
+  if (focusId !== focusToken) {
+    return;
+  }
+
+  const detection = detectSensitiveField(context);
 
   activeField = field;
   activeContext = context;
 
   updateWidgetContent(context, isNewField);
-  if (isNewField) {
+  applySensitiveState(detection, settings.sensitiveHandling);
+
+  if (isNewField && !detection.isSensitive) {
     requestSuggestions(context);
   }
   showWidget();
@@ -387,17 +498,27 @@ export const initWidget = (): void => {
   window.addEventListener('scroll', handleScroll, true);
   window.addEventListener('resize', handleScroll);
 
-  const initialTarget = document.activeElement;
-  if (initialTarget && initialTarget !== document.body) {
-    const field = normalizeFieldElement(initialTarget);
-    if (field) {
-      const context = buildFieldContext(field);
-      activeField = field;
-      activeContext = context;
-      updateWidgetContent(context, true);
-      requestSuggestions(context);
-      showWidget();
-      positionWidget(field);
+  const initializeActiveField = async (): Promise<void> => {
+    const initialTarget = document.activeElement;
+    if (initialTarget && initialTarget !== document.body) {
+      const field = normalizeFieldElement(initialTarget);
+      if (field) {
+        const context = buildFieldContext(field);
+        const settings = await getSettings();
+        activeField = field;
+        activeContext = context;
+        activeSensitiveHandling = settings.sensitiveHandling;
+        const detection = detectSensitiveField(context);
+        updateWidgetContent(context, true);
+        applySensitiveState(detection, settings.sensitiveHandling);
+        if (!detection.isSensitive) {
+          requestSuggestions(context);
+        }
+        showWidget();
+        positionWidget(field);
+      }
     }
-  }
+  };
+
+  void initializeActiveField();
 };

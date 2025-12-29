@@ -24,6 +24,11 @@ export const createWidget = (): HTMLDivElement => {
         Suggestions will appear here.
       </div>
     </div>
+    <div class="jobfill-widget__section jobfill-widget__section--warning" data-jobfill-warning hidden>
+      <div class="jobfill-widget__warning">
+        Sensitive field detected.
+      </div>
+    </div>
     <div class="jobfill-widget__section">
       <label class="jobfill-widget__label" for="jobfill-draft">Draft answer</label>
       <textarea
