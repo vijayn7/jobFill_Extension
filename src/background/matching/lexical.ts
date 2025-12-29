@@ -1,23 +1,23 @@
-import { buildSearchText, normalizeText } from './normalize';
+import { buildSearchText, normalizeText, tokenizeText } from './normalize';
 
 export const tokenize = (value: string): string[] => {
-  const normalized = normalizeText(value);
-  if (!normalized) {
-    return [];
-  }
-  return normalized.split(' ').filter(Boolean);
+  return tokenizeText(value);
 };
 
-export const jaccardSimilarity = (a: string[], b: string[]): number => {
-  if (a.length === 0 && b.length === 0) {
+export const jaccardSimilarity = (a: string[] | string, b: string[] | string): number => {
+  // Support both string[] and string inputs
+  const tokensA = Array.isArray(a) ? a : tokenizeText(a);
+  const tokensB = Array.isArray(b) ? b : tokenizeText(b);
+  
+  if (tokensA.length === 0 && tokensB.length === 0) {
     return 1;
   }
-  if (a.length === 0 || b.length === 0) {
+  if (tokensA.length === 0 || tokensB.length === 0) {
     return 0;
   }
 
-  const setA = new Set(a);
-  const setB = new Set(b);
+  const setA = new Set(tokensA);
+  const setB = new Set(tokensB);
   let intersection = 0;
 
   setA.forEach((token) => {
