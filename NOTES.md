@@ -1,0 +1,1 @@
+- Manual testing: not run (scaffold only).
