@@ -1,4 +1,4 @@
-import type { FieldContext, MemoryEntry } from '../../shared/types';
+import type { FieldContext, MemoryEntry, SuggestionEntry } from '../../shared/types';
 import { buildQueryTokens, jaccardSimilarity, trigramSimilarity } from './lexical';
 import { buildSearchText } from './normalize';
 
@@ -40,7 +40,7 @@ const scoreForEntry = (query: ReturnType<typeof buildQueryTokens>, entry: Memory
 export const scoreSuggestions = (
   context: FieldContext,
   entries: MemoryEntry[],
-): MemoryEntry[] => {
+): SuggestionEntry[] => {
   const query = buildQueryTokens([
     context.question_text,
     context.label,
@@ -57,5 +57,8 @@ export const scoreSuggestions = (
 
   return scored
     .sort((a, b) => b.score - a.score)
-    .map((item) => item.entry);
+    .map((item) => ({
+      ...item.entry,
+      score: item.score,
+    }));
 };
