@@ -1,4 +1,105 @@
+:root {
+  color-scheme: light;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
 body {
-  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f7f7fb;
+  color: #1b1f2a;
+}
+
+header {
+  padding: 24px 32px 8px;
+}
+
+main {
+  padding: 16px 32px 80px;
+  display: grid;
+  gap: 32px;
+  max-width: 960px;
+}
+
+section {
+  background: #ffffff;
+  border-radius: 12px;
   padding: 24px;
+  box-shadow: 0 8px 20px rgba(26, 33, 56, 0.08);
+  display: grid;
+  gap: 16px;
+}
+
+h1 {
+  margin-bottom: 4px;
+}
+
+h2 {
+  margin: 0 0 8px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field input,
+.field select,
+.field textarea,
+.contenteditable {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #c7ccd6;
+  font-size: 14px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.checkbox-row,
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contenteditable {
+  min-height: 80px;
+  background: #fdfdfd;
+}
+
+.dynamic {
+  font-style: italic;
+  color: #5b6270;
+}
+
+#debug-panel {
+  position: fixed;
+  right: 24px;
+  top: 24px;
+  width: 260px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+}
+
+#debug-panel h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+
+.debug-row {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.debug-row .label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
 }
