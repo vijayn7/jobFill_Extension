@@ -14,19 +14,33 @@ const dispatchInputAndChange = (element: HTMLSelectElement): void => {
   element.dispatchEvent(new Event('change', { bubbles: true }));
 };
 
+const normalizeOptionValue = (value: string): string => value.trim().toLowerCase();
+
+const findMatchingOption = (
+  element: HTMLSelectElement,
+  value: string,
+): HTMLOptionElement | undefined => {
+  const normalized = normalizeOptionValue(value);
+  return Array.from(element.options).find((option) => {
+    return (
+      normalizeOptionValue(option.value) === normalized ||
+      normalizeOptionValue(option.text) === normalized
+    );
+  });
+};
+
 export const setSelectValue = (element: HTMLSelectElement, value: string): void => {
+  const matchingOption = findMatchingOption(element, value);
+  const targetValue = matchingOption ? matchingOption.value : value;
   const setter = getNativeSelectValueSetter(element);
   if (setter) {
-    setter(value);
+    setter(targetValue);
   } else {
-    element.value = value;
+    element.value = targetValue;
   }
 
-  if (element.value !== value) {
-    const option = Array.from(element.options).find((item) => item.value === value);
-    if (option) {
-      option.selected = true;
-    }
+  if (matchingOption && element.value !== matchingOption.value) {
+    matchingOption.selected = true;
   }
 
   dispatchInputAndChange(element);

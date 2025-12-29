@@ -14,9 +14,19 @@ export interface FieldContext {
   pattern?: string;
   input_type?: string;
   select_options?: string[];
+  platform?: PlatformName;
   url?: string;
   domain?: string;
   page_title?: string;
+}
+
+export type PlatformName = 'greenhouse' | 'lever' | 'workday' | 'unknown';
+
+export interface PlatformAdapter {
+  platform: PlatformName;
+  matchUrl: (url: URL) => boolean;
+  containerSelectors: string[];
+  labelSelectors: string[];
 }
 
 export type SensitiveFieldType = 'ssn' | 'dob' | 'passport' | 'bank' | 'tax_id';

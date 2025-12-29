@@ -2,17 +2,22 @@ import { MessageType } from '../messages';
 import type { MemoryEntry, SaveAnswerRequest, SaveAnswerResponse } from '../../shared/types';
 import { createMemoryEntry, listMemoryEntries, updateMemoryEntry } from '../storage/memoryStore';
 import { jaccardSimilarity } from '../matching/lexical';
+import { detectPlatform } from '../platform/detect';
 
 const HIGH_SIMILARITY_THRESHOLD = 0.82;
 
 const nowIso = (): string => new Date().toISOString();
 
-const buildMeta = (request: SaveAnswerRequest): MemoryEntry['meta'] => ({
-  domain: request.payload.field.domain ?? 'unknown',
-  platform: request.payload.field.domain ?? 'unknown',
-  section: request.payload.field.section_heading ?? 'General',
-  field_type: request.payload.field.input_type ?? 'text',
-});
+const buildMeta = (request: SaveAnswerRequest): MemoryEntry['meta'] => {
+  const field = request.payload.field;
+  const platform = field.platform || detectPlatform(field.url ?? field.domain ?? '');
+  return {
+    domain: field.domain ?? 'unknown',
+    platform,
+    section: field.section_heading ?? 'General',
+    field_type: field.input_type ?? 'text',
+  };
+};
 
 const getQuestionText = (request: SaveAnswerRequest): string =>
   request.payload.field.question_text ||
