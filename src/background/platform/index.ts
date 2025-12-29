@@ -1,1 +1,0 @@
-export { detectPlatform } from './detect';
