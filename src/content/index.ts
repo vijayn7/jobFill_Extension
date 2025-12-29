@@ -1,7 +1,7 @@
 import { MessageType } from '../background/messages';
 import type { PingRequest, PingResponse } from '../shared/types';
 import { startFocusTracking } from './focus';
-import { startSettingsListener } from './state';
+import { startContentSettingsListener, startSettingsListener } from './state';
 import { initWidget } from './ui/widget';
 
 declare global {
@@ -24,5 +24,6 @@ if (!window.__jobfill_initialized) {
 
   startFocusTracking();
   startSettingsListener();
+  startContentSettingsListener();
   initWidget();
 }

@@ -44,6 +44,12 @@ export interface ExtensionSettings {
   embeddingsEndpoint: string;
 }
 
+export interface ContentSettings {
+  advanceAfterFill: boolean;
+  autofillConfidenceThreshold: number;
+  autofillOverwriteExisting: boolean;
+}
+
 export type EmbeddingsMode = 'off' | 'local';
 
 export type EmbeddingVector = number[];

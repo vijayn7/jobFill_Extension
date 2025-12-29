@@ -11,7 +11,9 @@
 .jobfill-widget {
   position: absolute;
   z-index: 999999;
-  width: 360px;
+  width: min(360px, 90vw);
+  min-width: 320px;
+  max-width: 380px;
   background: var(--jobfill-bg);
   border: 1px solid var(--jobfill-border);
   border-radius: 12px;
@@ -20,6 +22,40 @@
   color: var(--jobfill-text);
   padding: 16px;
   transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.jobfill-widget[data-anchor]::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--jobfill-bg);
+  border: 1px solid var(--jobfill-border);
+  transform: rotate(45deg);
+}
+
+.jobfill-widget[data-anchor='right']::before {
+  left: -7px;
+  top: 24px;
+}
+
+.jobfill-widget[data-anchor='left']::before {
+  right: -7px;
+  top: 24px;
+}
+
+.jobfill-widget[data-anchor='top']::before {
+  bottom: -7px;
+  left: 24px;
+}
+
+.jobfill-widget[data-anchor='bottom']::before {
+  top: -7px;
+  left: 24px;
+}
+
+.jobfill-widget--pinned {
+  outline: 1px dashed #cbd5f5;
 }
 
 .jobfill-widget--hidden {
@@ -33,6 +69,12 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.jobfill-widget__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .jobfill-widget__title {
@@ -177,6 +219,11 @@
   justify-content: flex-end;
 }
 
+.jobfill-widget__actions--autofill {
+  margin-top: 8px;
+  justify-content: space-between;
+}
+
 .jobfill-widget__button {
   border-radius: 8px;
   border: 1px solid var(--jobfill-border);
@@ -205,4 +252,16 @@
   font-size: 12px;
   padding: 8px;
   border-radius: 8px;
+}
+
+.jobfill-widget__autofill-status,
+.jobfill-widget__autofill-skipped {
+  font-size: 12px;
+  color: var(--jobfill-muted);
+}
+
+.jobfill-widget__section--autofill {
+  margin-top: 16px;
+  border-top: 1px solid var(--jobfill-border);
+  padding-top: 12px;
 }

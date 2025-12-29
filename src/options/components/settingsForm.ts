@@ -1,4 +1,14 @@
-import type { EmbeddingsMode, ExtensionSettings, SensitiveHandling } from '../../shared/types';
+import type {
+  ContentSettings,
+  EmbeddingsMode,
+  ExtensionSettings,
+  SensitiveHandling,
+} from '../../shared/types';
+import {
+  CONTENT_SETTINGS_STORAGE_KEY,
+  DEFAULT_CONTENT_SETTINGS,
+  normalizeContentSettings,
+} from '../../shared/contentSettings';
 import {
   DEFAULT_SETTINGS,
   SETTINGS_STORAGE_KEY,
@@ -48,6 +58,31 @@ const buildFormMarkup = (): string => {
           />
         </label>
       </div>
+      <div class="settings__group">
+        <h2>Autofill behavior</h2>
+        <p class="settings__description">
+          Control how JobFill advances fields and handles existing values during autofill.
+        </p>
+        <label class="settings__option">
+          <input type="checkbox" name="advanceAfterFill" />
+          Advance focus to the next field after filling
+        </label>
+        <label class="settings__option">
+          <input type="checkbox" name="autofillOverwriteExisting" />
+          Overwrite fields that already have values during Autofill page
+        </label>
+        <label class="settings__field">
+          <span>Autofill confidence threshold</span>
+          <input
+            class="settings__input"
+            type="number"
+            name="autofillConfidenceThreshold"
+            min="0"
+            max="1"
+            step="0.01"
+          />
+        </label>
+      </div>
     </section>
   `;
 };
@@ -60,6 +95,17 @@ const loadSettings = async (): Promise<ExtensionSettings> => {
 const saveSettings = async (settings: ExtensionSettings): Promise<void> => {
   await chrome.storage.sync.set({
     [SETTINGS_STORAGE_KEY]: settings,
+  });
+};
+
+const loadContentSettings = async (): Promise<ContentSettings> => {
+  const stored = await chrome.storage.local.get(CONTENT_SETTINGS_STORAGE_KEY);
+  return normalizeContentSettings(stored[CONTENT_SETTINGS_STORAGE_KEY]);
+};
+
+const saveContentSettings = async (settings: ContentSettings): Promise<void> => {
+  await chrome.storage.local.set({
+    [CONTENT_SETTINGS_STORAGE_KEY]: settings,
   });
 };
 
@@ -88,6 +134,23 @@ const applyEmbeddingsEndpoint = (root: HTMLElement, endpoint: string): void => {
   }
 };
 
+const applyContentSettings = (root: HTMLElement, settings: ContentSettings): void => {
+  const advance = root.querySelector<HTMLInputElement>('input[name="advanceAfterFill"]');
+  if (advance) {
+    advance.checked = settings.advanceAfterFill;
+  }
+  const overwrite = root.querySelector<HTMLInputElement>('input[name="autofillOverwriteExisting"]');
+  if (overwrite) {
+    overwrite.checked = settings.autofillOverwriteExisting;
+  }
+  const threshold = root.querySelector<HTMLInputElement>(
+    'input[name="autofillConfidenceThreshold"]',
+  );
+  if (threshold) {
+    threshold.value = settings.autofillConfidenceThreshold.toFixed(2);
+  }
+};
+
 const getSelectedSensitiveHandling = (root: HTMLElement): SensitiveHandling => {
   const selected = root.querySelector<HTMLInputElement>('input[name="sensitiveHandling"]:checked');
   return selected?.value === 'warn_only' ? 'warn_only' : 'block';
@@ -103,6 +166,25 @@ const getEmbeddingsEndpoint = (root: HTMLElement): string => {
   return input?.value?.trim() ?? '';
 };
 
+const getAdvanceAfterFill = (root: HTMLElement): boolean => {
+  const input = root.querySelector<HTMLInputElement>('input[name="advanceAfterFill"]');
+  return input?.checked ?? DEFAULT_CONTENT_SETTINGS.advanceAfterFill;
+};
+
+const getAutofillOverwriteExisting = (root: HTMLElement): boolean => {
+  const input = root.querySelector<HTMLInputElement>('input[name="autofillOverwriteExisting"]');
+  return input?.checked ?? DEFAULT_CONTENT_SETTINGS.autofillOverwriteExisting;
+};
+
+const getAutofillConfidenceThreshold = (root: HTMLElement): number => {
+  const input = root.querySelector<HTMLInputElement>('input[name="autofillConfidenceThreshold"]');
+  const value = Number(input?.value);
+  if (Number.isFinite(value)) {
+    return Math.min(1, Math.max(0, value));
+  }
+  return DEFAULT_CONTENT_SETTINGS.autofillConfidenceThreshold;
+};
+
 const persistSettings = async (root: HTMLElement): Promise<void> => {
   const next: ExtensionSettings = {
     ...DEFAULT_SETTINGS,
@@ -114,13 +196,28 @@ const persistSettings = async (root: HTMLElement): Promise<void> => {
   await saveSettings(next);
 };
 
+const persistContentSettings = async (root: HTMLElement): Promise<void> => {
+  const next: ContentSettings = {
+    ...DEFAULT_CONTENT_SETTINGS,
+    advanceAfterFill: getAdvanceAfterFill(root),
+    autofillOverwriteExisting: getAutofillOverwriteExisting(root),
+    autofillConfidenceThreshold: getAutofillConfidenceThreshold(root),
+  };
+
+  await saveContentSettings(next);
+};
+
 export const renderSettingsForm = async (root: HTMLElement): Promise<void> => {
   root.innerHTML = buildFormMarkup();
 
-  const settings = await loadSettings();
+  const [settings, contentSettings] = await Promise.all([
+    loadSettings(),
+    loadContentSettings(),
+  ]);
   applySelection(root, settings.sensitiveHandling);
   applyEmbeddingsMode(root, settings.embeddingsMode);
   applyEmbeddingsEndpoint(root, settings.embeddingsEndpoint);
+  applyContentSettings(root, contentSettings);
 
   root.addEventListener('change', (event) => {
     const target = event.target as HTMLInputElement | null;
@@ -135,6 +232,13 @@ export const renderSettingsForm = async (root: HTMLElement): Promise<void> => {
     ) {
       void persistSettings(root);
     }
+    if (
+      target.name === 'advanceAfterFill'
+      || target.name === 'autofillOverwriteExisting'
+      || target.name === 'autofillConfidenceThreshold'
+    ) {
+      void persistContentSettings(root);
+    }
   });
 
   root.addEventListener('input', (event) => {
@@ -143,5 +247,13 @@ export const renderSettingsForm = async (root: HTMLElement): Promise<void> => {
       return;
     }
     void persistSettings(root);
+  });
+
+  root.addEventListener('input', (event) => {
+    const target = event.target as HTMLInputElement | null;
+    if (!target || target.name !== 'autofillConfidenceThreshold') {
+      return;
+    }
+    void persistContentSettings(root);
   });
 };
