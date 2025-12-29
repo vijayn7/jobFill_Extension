@@ -1,1 +1,1 @@
-- Manual testing: not run (not requested).
+- Manual testing: not run (not requested for message protocol update).
