@@ -3,3 +3,4 @@
 - Manual testing: not run (storage changes only).
 - Manual testing: not run (not requested).
 - Manual testing: not run (extension UI requires Chrome extension environment).
+- Manual testing: not run (not requested for suggestion card updates).

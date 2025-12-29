@@ -4,11 +4,14 @@ import type {
   FieldElement,
   GetSuggestionsRequest,
   GetSuggestionsResponse,
+  MarkUsedRequest,
+  MarkUsedResponse,
   MemoryEntry,
   SaveAnswerRequest,
   SaveAnswerResponse,
   SensitiveFieldDetection,
   SensitiveHandling,
+  SuggestionEntry,
 } from '../../shared/types';
 import { detectSensitiveField } from '../../shared/sensitive';
 import { DEFAULT_SETTINGS } from '../../shared/settings';
@@ -149,6 +152,17 @@ const updateWarning = (message: string | null): void => {
 };
 
 const updateSuggestionsPlaceholder = (message: string): void => {
+const formatScore = (score: number): string => `${Math.round(score * 100)}% match`;
+
+const getAnswerPreview = (answer: string): string => {
+  const trimmed = answer.trim();
+  if (trimmed.length <= 140) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, 137)}...`;
+};
+
+const applySuggestion = (suggestion: MemoryEntry): void => {
   if (!widgetRoot) {
     return;
   }
@@ -197,6 +211,26 @@ const applySensitiveState = (
 };
 
 const renderSuggestions = (suggestions: MemoryEntry[]): void => {
+  const draft = widgetRoot.querySelector<HTMLTextAreaElement>(DRAFT_SELECTOR);
+  if (draft) {
+    draft.value = suggestion.answer_text;
+  }
+
+  const request: MarkUsedRequest = {
+    type: MessageType.MARK_USED,
+    payload: {
+      entryId: suggestion.id,
+    },
+  };
+
+  chrome.runtime.sendMessage(request, (response: MarkUsedResponse) => {
+    if (!response || response.type !== MessageType.MARK_USED) {
+      return;
+    }
+  });
+};
+
+const renderSuggestions = (suggestions: SuggestionEntry[]): void => {
   if (!widgetRoot) {
     return;
   }
@@ -220,16 +254,38 @@ const renderSuggestions = (suggestions: MemoryEntry[]): void => {
     const item = document.createElement('div');
     item.className = 'jobfill-widget__suggestion';
 
+    const header = document.createElement('div');
+    header.className = 'jobfill-widget__suggestion-header';
+
     const question = document.createElement('div');
     question.className = 'jobfill-widget__suggestion-question';
     question.textContent = suggestion.question_text || 'Saved answer';
 
+    const score = document.createElement('span');
+    score.className = 'jobfill-widget__suggestion-score';
+    score.textContent = formatScore(suggestion.score);
+
+    header.appendChild(question);
+    header.appendChild(score);
+
     const answer = document.createElement('div');
     answer.className = 'jobfill-widget__suggestion-answer';
-    answer.textContent = suggestion.answer_text;
+    answer.textContent = getAnswerPreview(suggestion.answer_text);
 
-    item.appendChild(question);
+    const actions = document.createElement('div');
+    actions.className = 'jobfill-widget__suggestion-actions';
+
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    useButton.className = 'jobfill-widget__suggestion-button';
+    useButton.textContent = 'Use';
+    useButton.addEventListener('click', () => applySuggestion(suggestion));
+
+    actions.appendChild(useButton);
+
+    item.appendChild(header);
     item.appendChild(answer);
+    item.appendChild(actions);
     list.appendChild(item);
   });
 

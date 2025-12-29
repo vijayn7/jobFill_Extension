@@ -75,6 +75,10 @@ export interface MemoryEntry extends BaseRecord {
   usage_count: number;
 }
 
+export interface SuggestionEntry extends MemoryEntry {
+  score: number;
+}
+
 export type MemoryStoreName = 'memory_entries';
 
 export interface MemoryDatabaseSchema extends DBSchema {
@@ -100,7 +104,7 @@ export interface FieldFocusedPayload {
 }
 
 export interface SuggestionsPayload {
-  suggestions: MemoryEntry[];
+  suggestions: SuggestionEntry[];
 }
 
 export interface SaveAnswerPayload {
