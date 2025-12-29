@@ -53,6 +53,10 @@
   margin-bottom: 12px;
 }
 
+.jobfill-widget__section--warning {
+  margin-top: -4px;
+}
+
 .jobfill-widget__label {
   font-size: 11px;
   font-weight: 600;
@@ -153,4 +157,18 @@
   background: var(--jobfill-primary);
   border-color: var(--jobfill-primary);
   color: var(--jobfill-primary-text);
+}
+
+.jobfill-widget__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.jobfill-widget__warning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 8px;
 }

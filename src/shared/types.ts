@@ -19,6 +19,19 @@ export interface FieldContext {
   page_title?: string;
 }
 
+export type SensitiveFieldType = 'ssn' | 'dob' | 'passport' | 'bank' | 'tax_id';
+
+export type SensitiveHandling = 'block' | 'warn_only';
+
+export interface SensitiveFieldDetection {
+  isSensitive: boolean;
+  matches: SensitiveFieldType[];
+}
+
+export interface ExtensionSettings {
+  sensitiveHandling: SensitiveHandling;
+}
+
 export type FieldElement =
   | HTMLInputElement
   | HTMLTextAreaElement

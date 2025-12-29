@@ -1,6 +1,7 @@
 import { MessageType } from '../background/messages';
 import type { PingRequest, PingResponse } from '../shared/types';
 import { startFocusTracking } from './focus';
+import { startSettingsListener } from './state';
 import { initWidget } from './ui/widget';
 
 const ping: PingRequest = { type: MessageType.PING };
@@ -12,4 +13,5 @@ chrome.runtime.sendMessage(ping, (response: PingResponse) => {
 });
 
 startFocusTracking();
+startSettingsListener();
 initWidget();
