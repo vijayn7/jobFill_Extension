@@ -1,1 +1,1 @@
-- Manual testing: not run (test site updates only).
+- Manual testing: not run (schema/type changes only).
