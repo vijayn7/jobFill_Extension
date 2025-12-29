@@ -1,1 +1,1 @@
-- Manual testing: not run (schema/type changes only).
+- Manual testing: not run (content focus tracking/extraction changes only).
