@@ -1,10 +1,12 @@
 import type { FieldContext, FieldElement } from '../../shared/types';
+import { detectPlatform } from '../../background/platform/detect';
 import { getFieldIdentifiers } from './fingerprint';
 import {
   getAriaLabel,
   getAriaLabelledBy,
   getLabelForAttribute,
   getNearbyText,
+  getPlatformLabel,
   getPlaceholderText,
   getWrappedLabel,
   getWrapperHeuristicLabel,
@@ -65,6 +67,32 @@ const getInputType = (element: FieldElement): string | undefined => {
 
 const getSelectOptions = (element: FieldElement): string[] | undefined => {
   if (!(element instanceof HTMLSelectElement)) {
+    if (element instanceof HTMLInputElement && element.type.toLowerCase() === 'radio') {
+      const name = element.name;
+      const selector = name
+        ? `input[type="radio"][name="${CSS.escape(name)}"]`
+        : 'input[type="radio"]';
+      const scope =
+        element.closest('fieldset, form, [role="radiogroup"]') ?? document.documentElement;
+      const radios = Array.from(scope.querySelectorAll(selector)).filter(
+        (radio): radio is HTMLInputElement => radio instanceof HTMLInputElement,
+      );
+      const options = radios
+        .map(
+          (radio) =>
+            getLabelForAttribute(radio) ||
+            getWrappedLabel(radio) ||
+            getAriaLabel(radio) ||
+            getAriaLabelledBy(radio) ||
+            radio.value,
+        )
+        .filter((text): text is string => Boolean(text && text.trim()));
+      const unique = Array.from(new Set(options.map((text) => text.trim()))).filter(
+        (text) => text.length > 0,
+      );
+      return unique.length > 0 ? unique : undefined;
+    }
+
     return undefined;
   }
 
@@ -84,6 +112,7 @@ const getQuestionText = (
   getWrappedLabel(element) ||
   getAriaLabel(element) ||
   getAriaLabelledBy(element) ||
+  getPlatformLabel(element) ||
   getWrapperHeuristicLabel(element) ||
   getPlaceholderText(element) ||
   sectionHeading ||
@@ -107,6 +136,7 @@ export const buildFieldContext = (element: FieldElement): FieldContext => {
     pattern: getPattern(element),
     input_type: getInputType(element),
     select_options: getSelectOptions(element),
+    platform: detectPlatform(window.location.href),
     url: window.location.href,
     domain: window.location.hostname,
     page_title: document.title,

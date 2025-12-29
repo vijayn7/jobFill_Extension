@@ -34,6 +34,7 @@ import { getProfile } from './profile/profileStore';
 import { buildProfileSuggestions } from './profile/structuredSuggestions';
 import { rankSuggestionsWithEmbeddings } from './matching/embeddings';
 import { getExtensionSettings } from './settings';
+import { detectPlatform } from './platform/detect';
 
 const DEFAULT_SUGGESTION_LIMIT = 5;
 
@@ -51,6 +52,8 @@ const buildMemoryEntry = (request: SaveAnswerRequest): MemoryEntry => {
   const now = new Date().toISOString();
   const { field, value } = request.payload;
   const questionText = getQuestionText(field);
+  const platform =
+    field.platform || (field.url ? detectPlatform(field.url) : detectPlatform(field.domain ?? ''));
 
   return {
     id: crypto.randomUUID(),
@@ -59,7 +62,7 @@ const buildMemoryEntry = (request: SaveAnswerRequest): MemoryEntry => {
     answer_type: field.input_type ?? 'text',
     meta: {
       domain: field.domain ?? 'unknown',
-      platform: field.domain ?? 'unknown',
+      platform,
       section: field.section_heading ?? 'general',
       field_type: field.input_type ?? 'text',
     },

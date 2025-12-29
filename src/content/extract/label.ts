@@ -1,3 +1,6 @@
+import { detectPlatform } from '../../background/platform/detect';
+import { getPlatformAdapter } from '../../background/platform';
+
 const whitespaceRegex = /\s+/g;
 const maxNearbyChars = 200;
 
@@ -63,6 +66,36 @@ export const getWrapperHeuristicLabel = (element: HTMLElement): string | undefin
 
     current = current.parentElement;
     steps += 1;
+  }
+
+  return undefined;
+};
+
+export const getPlatformLabel = (element: HTMLElement): string | undefined => {
+  const platform = detectPlatform(window.location.href);
+  const adapter = getPlatformAdapter(platform);
+  if (!adapter) {
+    return undefined;
+  }
+
+  const selector = adapter.containerSelectors.join(',');
+  const container = selector ? element.closest(selector) : element.parentElement;
+  if (!container) {
+    return undefined;
+  }
+
+  for (const labelSelector of adapter.labelSelectors) {
+    const candidate = container.querySelector(labelSelector);
+    if (!candidate || candidate === element) {
+      continue;
+    }
+    if (candidate instanceof HTMLElement && candidate.matches('input, textarea, select')) {
+      continue;
+    }
+    const text = getElementText(candidate);
+    if (text) {
+      return text;
+    }
   }
 
   return undefined;
