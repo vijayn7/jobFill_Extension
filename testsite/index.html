@@ -3,11 +3,152 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test Site</title>
+    <title>JobFill Test Site</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <h1>JobFill Test Site</h1>
+    <header>
+      <h1>JobFill Test Site</h1>
+      <p>Use this page to validate field extraction and UI behavior.</p>
+    </header>
+
+    <main>
+      <section aria-labelledby="personal-info-heading">
+        <h2 id="personal-info-heading">Personal Information</h2>
+        <div class="field">
+          <label for="full-name">Full legal name</label>
+          <input id="full-name" type="text" name="fullName" autocomplete="name" />
+        </div>
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" type="email" name="email" autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label for="dob">Date of birth</label>
+          <input id="dob" type="date" name="dob" placeholder="MM/DD/YYYY" />
+        </div>
+
+        <div class="field">
+          <label for="ssn">Social Security Number</label>
+          <input id="ssn" type="text" name="ssn" placeholder="123-45-6789" />
+        </div>
+
+        <div class="field">
+          <label for="passport">Passport number</label>
+          <input id="passport" type="text" name="passport" />
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-heading">
+        <h2 id="contact-heading">Contact Details</h2>
+        <div class="field">
+          <label for="phone">Primary phone</label>
+          <input id="phone" type="tel" name="phone" autocomplete="tel" />
+        </div>
+
+        <div class="field">
+          <input
+            id="linkedin"
+            type="url"
+            name="linkedin"
+            aria-label="LinkedIn profile URL"
+          />
+        </div>
+
+        <div class="field">
+          <span id="website-label">Personal website</span>
+          <input id="website" type="url" name="website" aria-labelledby="website-label" />
+        </div>
+
+        <div class="field">
+          <input id="nickname" type="text" name="nickname" placeholder="Preferred nickname" />
+        </div>
+      </section>
+
+      <section aria-labelledby="experience-heading">
+        <h2 id="experience-heading">Experience</h2>
+        <div class="field">
+          <label for="summary">Professional summary</label>
+          <textarea
+            id="summary"
+            name="summary"
+            rows="4"
+          >Please describe a recent project where you improved a process, the tools you used, and the outcome in terms of measurable impact.</textarea>
+        </div>
+
+        <div class="field">
+          <label for="role-level">Role level</label>
+          <select id="role-level" name="roleLevel">
+            <option value="">Select one</option>
+            <option value="ic">Individual contributor</option>
+            <option value="manager">People manager</option>
+            <option value="lead">Tech lead</option>
+          </select>
+        </div>
+
+        <fieldset class="field">
+          <legend>Work authorization</legend>
+          <div class="radio-row">
+            <input id="auth-us" type="radio" name="auth" value="us" />
+            <label for="auth-us">Authorized to work in the US</label>
+          </div>
+          <div class="radio-row">
+            <input id="auth-visa" type="radio" name="auth" value="visa" />
+            <label for="auth-visa">Need visa sponsorship</label>
+          </div>
+        </fieldset>
+
+        <div class="field checkbox-row">
+          <input id="relocate" type="checkbox" name="relocate" />
+          <label for="relocate">Open to relocation</label>
+        </div>
+
+        <div class="field">
+          <label for="editable">Cover letter (contenteditable)</label>
+          <div
+            id="editable"
+            class="contenteditable"
+            contenteditable="true"
+            role="textbox"
+            aria-label="Cover letter"
+          >Write a short note about why you want this role.</div>
+        </div>
+      </section>
+
+      <section aria-labelledby="payment-heading">
+        <h2 id="payment-heading">Payment &amp; Identity</h2>
+        <div class="field">
+          <label for="routing">Bank routing number</label>
+          <input id="routing" type="text" name="routing" />
+        </div>
+      </section>
+
+      <section aria-labelledby="dynamic-heading">
+        <h2 id="dynamic-heading">Dynamic Fields</h2>
+        <div id="dynamic-container" class="field dynamic">
+          <p>Waiting for an injected field...</p>
+        </div>
+      </section>
+    </main>
+
+    <aside id="debug-panel" aria-live="polite">
+      <h2>Debug Panel</h2>
+      <div class="debug-row">
+        <span class="label">Last focused field</span>
+        <span id="debug-field">None</span>
+      </div>
+      <div class="debug-row">
+        <span class="label">Extracted question</span>
+        <span id="debug-question">None</span>
+      </div>
+      <div class="debug-row">
+        <span class="label">Section heading</span>
+        <span id="debug-section">None</span>
+      </div>
+    </aside>
+
     <script src="./app.js"></script>
   </body>
 </html>
