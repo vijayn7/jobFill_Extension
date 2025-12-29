@@ -20,6 +20,8 @@ import {
 } from './storage/memoryStore';
 import { scoreSuggestions } from './matching/scoring';
 import { getCachedSuggestions, setCachedSuggestions, clearCachedSuggestions } from './matching/cache';
+import { getProfile } from './profile/profileStore';
+import { buildProfileSuggestions } from './profile/structuredSuggestions';
 
 const DEFAULT_SUGGESTION_LIMIT = 5;
 
@@ -71,13 +73,18 @@ const handleGetSuggestions = async (
   }
 
   const context = request.payload.field;
-  const entries = await listMemoryEntries({
-    domain: context.domain,
-  });
+  const [entries, profile] = await Promise.all([
+    listMemoryEntries({
+      domain: context.domain,
+    }),
+    getProfile(),
+  ]);
 
+  const profileSuggestions = buildProfileSuggestions(context, profile);
   const scored = scoreSuggestions(context, entries);
+  const combined = [...profileSuggestions, ...scored].sort((a, b) => b.score - a.score);
   const limit = request.payload.limit ?? DEFAULT_SUGGESTION_LIMIT;
-  const limited = scored.slice(0, limit);
+  const limited = combined.slice(0, limit);
 
   if (tabId !== undefined) {
     setCachedSuggestions(tabId, limited);
