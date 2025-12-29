@@ -1,1 +1,1 @@
-- Manual testing: not run (content focus tracking/extraction changes only).
+- Manual testing: not run (storage changes only).

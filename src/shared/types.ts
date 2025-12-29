@@ -1,3 +1,5 @@
+import type { DBSchema } from 'idb';
+
 export interface FieldContext {
   id?: string;
   name?: string;
@@ -58,6 +60,26 @@ export interface MemoryEntry extends BaseRecord {
   meta: MemoryEntryMeta;
   last_used_at: string | null;
   usage_count: number;
+}
+
+export type MemoryStoreName = 'memory_entries';
+
+export interface MemoryDatabaseSchema extends DBSchema {
+  memory_entries: {
+    key: string;
+    value: MemoryEntry;
+    indexes: {
+      by_domain: string;
+      by_answer_type: string;
+      by_updated_at: string;
+    };
+  };
+}
+
+export interface ListMemoryEntriesOptions {
+  domain?: string;
+  answerType?: string;
+  limit?: number;
 }
 
 export interface FieldFocusedPayload {
