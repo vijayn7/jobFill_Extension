@@ -2,6 +2,9 @@ import { MessageType } from './messages';
 import type { BackgroundMessage, BackgroundResponse } from './messages';
 import { handleBackgroundMessage } from './messageHandler';
 import { handleSaveAnswer } from './handlers/saveAnswer';
+import { startBackgroundSettingsListener } from './settings';
+
+startBackgroundSettingsListener();
 
 chrome.runtime.onMessage.addListener((message: BackgroundMessage, _sender, sendResponse) => {
   // Handle PING immediately

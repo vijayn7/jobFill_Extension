@@ -30,6 +30,21 @@ export interface SensitiveFieldDetection {
 
 export interface ExtensionSettings {
   sensitiveHandling: SensitiveHandling;
+  embeddingsMode: EmbeddingsMode;
+  embeddingsEndpoint: string;
+}
+
+export type EmbeddingsMode = 'off' | 'local';
+
+export type EmbeddingVector = number[];
+
+export interface EmbeddingsEndpointRequest {
+  inputs: string[];
+}
+
+export interface EmbeddingsEndpointResponse {
+  embeddings?: EmbeddingVector[];
+  vectors?: EmbeddingVector[];
 }
 
 export type ProfileFieldKey = 'email' | 'phone' | 'linkedin' | 'github' | 'resumeText';
