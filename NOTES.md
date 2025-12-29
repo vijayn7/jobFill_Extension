@@ -1,1 +1,1 @@
-- Manual testing: not run (scaffold only).
+- Manual testing: not run (not requested).
