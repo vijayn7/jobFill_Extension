@@ -6,4 +6,5 @@
 - Manual testing: not run (not requested for suggestion card updates).
 - Manual testing: not run (options page memory manager not exercised).
 - Manual testing: not run (profile store + structured autofill).
+- Manual testing: not run (not requested for embeddings matching).
 - Manual testing: not run (platform detection and ATS label handling require extension runtime).

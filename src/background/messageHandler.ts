@@ -32,6 +32,8 @@ import { scoreSuggestions } from './matching/scoring';
 import { getCachedSuggestions, setCachedSuggestions, clearCachedSuggestions } from './matching/cache';
 import { getProfile } from './profile/profileStore';
 import { buildProfileSuggestions } from './profile/structuredSuggestions';
+import { rankSuggestionsWithEmbeddings } from './matching/embeddings';
+import { getExtensionSettings } from './settings';
 import { detectPlatform } from './platform/detect';
 
 const DEFAULT_SUGGESTION_LIMIT = 5;
@@ -86,15 +88,23 @@ const handleGetSuggestions = async (
   }
 
   const context = request.payload.field;
-  const [entries, profile] = await Promise.all([
+  const [entries, profile, settings] = await Promise.all([
     listMemoryEntries({
       domain: context.domain,
     }),
     getProfile(),
+    getExtensionSettings(),
   ]);
 
   const profileSuggestions = buildProfileSuggestions(context, profile);
-  const scored = scoreSuggestions(context, entries);
+  let scored = scoreSuggestions(context, entries);
+  if (settings.embeddingsMode === 'local' && settings.embeddingsEndpoint) {
+    scored = await rankSuggestionsWithEmbeddings(
+      context,
+      scored,
+      settings.embeddingsEndpoint,
+    );
+  }
   const combined = [...profileSuggestions, ...scored].sort((a, b) => b.score - a.score);
   const limit = request.payload.limit ?? DEFAULT_SUGGESTION_LIMIT;
   const limited = combined.slice(0, limit);
